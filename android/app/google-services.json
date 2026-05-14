@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "199725081250",
+    "project_id": "fithub-gym-6415e",
+    "storage_bucket": "fithub-gym-6415e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:199725081250:android:f323c8b72927afeed8edfb",
+        "android_client_info": {
+          "package_name": "com.fithub.gym.fithub_gym"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIwx6r7u1x28_Vw7dFGFLoE3gziSckqgk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

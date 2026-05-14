@@ -19,4 +19,10 @@ class NavigationProvider extends ChangeNotifier {
     _selectedIndex = index;
     notifyListeners();
   }
+
+  // Use this to reset the app state when someone logs out
+  void logout() {
+    _selectedIndex = 0;
+    notifyListeners();
+  }
 }
