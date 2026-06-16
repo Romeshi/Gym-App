@@ -46,6 +46,40 @@ class OwnerDashboard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 30),
+            Text('Quick Actions', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 15),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha((0.03 * 255).toInt()),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildQuickAction(context, 'Add Member', Icons.person_add_rounded, Colors.blue, () {
+                    _navigateToPlaceholder(context, 'Add New Member');
+                  }),
+                  _buildQuickAction(context, 'Add Staff', Icons.badge_rounded, Colors.orange, () {
+                    _navigateToPlaceholder(context, 'Add New Staff');
+                  }),
+                  _buildQuickAction(context, 'Add Plan', Icons.add_card_rounded, Colors.green, () {
+                    _navigateToPlaceholder(context, 'Create Membership Plan');
+                  }),
+                  _buildQuickAction(context, 'Inquiries', Icons.mark_chat_read_rounded, Colors.purple, () {
+                    _navigateToPlaceholder(context, 'Resolve Inquiries');
+                  }),
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -58,6 +92,43 @@ class OwnerDashboard extends StatelessWidget {
             _buildNoticeItem(context, 'Maintenance', 'Equipment maintenance on Sunday...', '1d ago'),
           ],
         ),
+      ),
+    );
+  }
+
+  void _navigateToPlaceholder(BuildContext context, String title) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(title: Text(title)),
+          body: Center(child: Text('$title Screen\n(Coming Soon)', textAlign: TextAlign.center, style: const TextStyle(fontSize: 18, color: Colors.grey))),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickAction(BuildContext context, String label, IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(15),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withAlpha((0.1 * 255).toInt()),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(icon, color: color, size: 26),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+          ),
+        ],
       ),
     );
   }

@@ -12,6 +12,7 @@ import 'package:fithub_gym/features/member/screens/workout_list_screen.dart';
 import 'package:fithub_gym/features/member/screens/diet_screen.dart';
 import 'package:fithub_gym/features/member/screens/growth_history_screen.dart';
 import 'package:fithub_gym/features/member/screens/notice_list_screen.dart';
+import 'package:fithub_gym/features/owner/screens/member_management_screen.dart';
 
 class PlaceholderScreen extends StatelessWidget {
   final String title;
@@ -32,9 +33,11 @@ class RootShell extends StatelessWidget {
     final navProvider = context.watch<NavigationProvider>();
     final role = navProvider.currentRole;
 
+    final navItems = _getNavItems(role);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_getRoleTitle(role)),
+        title: Text(navItems[navProvider.selectedIndex].label ?? ''),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -99,20 +102,9 @@ class RootShell extends StatelessWidget {
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
-        items: _getNavItems(role),
+        items: navItems,
       ),
     );
-  }
-
-  String _getRoleTitle(UserRole role) {
-    switch (role) {
-      case UserRole.owner:
-        return 'Gym Management';
-      case UserRole.trainer:
-        return 'Trainer Portal';
-      case UserRole.member:
-        return 'FitHub';
-    }
   }
 
   List<Widget> _getScreens(UserRole role) {
@@ -135,6 +127,7 @@ class RootShell extends StatelessWidget {
       case UserRole.owner:
         return [
           const OwnerDashboard(),
+          const MemberManagementScreen(),
           const PlaceholderScreen('Staff Management'),
           const PlaceholderScreen('Gym Revenue'),
           const PlaceholderScreen('Notices'),
@@ -188,22 +181,11 @@ class RootShell extends StatelessWidget {
         ];
       case UserRole.owner:
         return [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.insights_rounded),
-            label: 'Stats',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.badge_rounded),
-            label: 'Staff',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.payments_rounded),
-            label: 'Revenue',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.campaign_rounded),
-            label: 'Notices',
-          ),
+          const BottomNavigationBarItem(icon: Icon(Icons.insights_rounded), label: 'Home'),
+          const BottomNavigationBarItem(icon: Icon(Icons.badge_rounded), label: 'Members'),
+          const BottomNavigationBarItem(icon: Icon(Icons.badge_rounded), label: 'Staff'),
+          const BottomNavigationBarItem(icon: Icon(Icons.payments_rounded), label: 'Revenue'),
+          const BottomNavigationBarItem(icon: Icon(Icons.campaign_rounded), label: 'Notices'),
         ];
     }
   }
