@@ -7,6 +7,39 @@ import 'package:fithub_gym/features/dashboard/screens/root_shell.dart';
 import 'package:fithub_gym/features/owner/screens/register_gym_screen.dart';
 import 'package:fithub_gym/features/owner/screens/OTPVerificationScreen.dart';
 
+// --- Local Theme Configuration for a Premium, Consistent Finish ---
+class ModernUI {
+  static const Color primaryBlue = Color(0xFF2962FF);
+  static const Color darkBlue = Color(0xFF1A237E);
+  static const Color fieldBg = Color(0xFFF8F9FA); // Clean soft grey fill
+
+  static InputDecoration fieldDecoration({
+    required String label,
+    required IconData prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: fieldBg,
+      prefixIcon: Icon(prefixIcon, color: Colors.grey.shade600),
+      suffixIcon: suffixIcon,
+      labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+      contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+
+      // Modern smooth corner radii matching registration aesthetics
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: primaryBlue, width: 2),
+      ),
+    );
+  }
+}
+
 class LoginScreen extends StatefulWidget {
   final UserRole role;
   const LoginScreen({super.key, required this.role});
@@ -49,10 +82,9 @@ class _LoginScreenState extends State<LoginScreen> {
             TextField(
               controller: _resetController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: "Email Address",
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.email_outlined),
+              decoration: ModernUI.fieldDecoration(
+                label: "Email Address",
+                prefixIcon: Icons.email_outlined,
               ),
             ),
           ],
@@ -100,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2962FF),
+              backgroundColor: ModernUI.primaryBlue,
             ),
             child: const Text(
               "Send Link",
@@ -120,6 +152,13 @@ class _LoginScreenState extends State<LoginScreen> {
     if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter both email and password')),
+      );
+      return;
+    }
+
+    if (!email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid email address')),
       );
       return;
     }
@@ -234,7 +273,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   'Login as ${_roleToString(widget.role)}',
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1A237E),
+                    color: ModernUI.darkBlue,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -244,31 +283,30 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // Email Input
+                // Styled Email Input
                 TextField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Email Address',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email_outlined),
+                  decoration: ModernUI.fieldDecoration(
+                    label: 'Email Address',
+                    prefixIcon: Icons.email_outlined,
                   ),
                 ),
                 const SizedBox(height: 20),
 
-                // Password Input
+                // Styled Password Input
                 TextField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.lock_outline),
+                  decoration: ModernUI.fieldDecoration(
+                    label: 'Password',
+                    prefixIcon: Icons.lock_outline,
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
                             ? Icons.visibility_off
                             : Icons.visibility,
+                        color: Colors.grey.shade600,
                       ),
                       onPressed: () =>
                           setState(() => _obscurePassword = !_obscurePassword),
@@ -278,33 +316,44 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 10),
 
-                // --- Forgot Password Button linked to Dialog ---
+                // Forgot Password Button linked to Dialog
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: _showForgotPasswordDialog,
-                    child: const Text('Forgot Password?'),
+                    child: const Text(
+                      'Forgot Password?',
+                      style: TextStyle(
+                        color: ModernUI.primaryBlue,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
 
                 const SizedBox(height: 30),
 
-                // Login Button
+                // Modernized Action Execution Button
                 SizedBox(
                   height: 55,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2962FF),
+                      backgroundColor: ModernUI.primaryBlue,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
+                      elevation: 0,
                     ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
                             'Login',
-                            style: TextStyle(color: Colors.white, fontSize: 16),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                   ),
                 ),
@@ -329,7 +378,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           'Sign Up',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF2962FF),
+                            color: ModernUI.primaryBlue,
                           ),
                         ),
                       ),
@@ -340,8 +389,10 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           if (_isLoading)
             Container(
-              color: Colors.black26,
-              child: const Center(child: CircularProgressIndicator()),
+              color: Colors.black12,
+              child: const Center(
+                child: CircularProgressIndicator(color: ModernUI.primaryBlue),
+              ),
             ),
         ],
       ),
