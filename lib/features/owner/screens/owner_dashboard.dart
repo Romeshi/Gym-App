@@ -1,12 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+import '../../../core/providers/gym_provider.dart';
+import '../../../core/services/database_service.dart';
 import 'post_notice_screen.dart';
-import 'package:fithub_gym/features/dashboard/screens/app_footer.dart';
+import 'owner_notice_list_screen.dart';
+import 'add_member_screen.dart';
+import 'add_staff_screen.dart';
+import 'add_plan_screen.dart';
+import 'inquiries_screen.dart';
 
 class OwnerDashboard extends StatelessWidget {
   const OwnerDashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final gymProvider = Provider.of<GymProvider>(context);
+    final gymName = gymProvider.currentGymName ?? 'Your Gym';
+    
+    final String? uid = FirebaseAuth.instance.currentUser?.uid;
+    final Stream<QuerySnapshot>? staffStream = uid != null ? FirebaseFirestore.instance.collection('gyms').doc(uid).collection('staff').snapshots() : null;
+    final Stream<QuerySnapshot>? membersStream = uid != null ? FirebaseFirestore.instance.collection('gyms').doc(uid).collection('members').snapshots() : null;
+    final Stream<QuerySnapshot>? plansStream = uid != null ? FirebaseFirestore.instance.collection('gyms').doc(uid).collection('plans').snapshots() : null;
+    final Stream<QuerySnapshot>? inquiriesStream = uid != null ? FirebaseFirestore.instance.collection('gyms').doc(uid).collection('inquiries').snapshots() : null;
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
@@ -18,58 +37,137 @@ class OwnerDashboard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Gold\'s Gym Colombo',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const Text('Gym Management Overview'),
-                  const SizedBox(height: 25),
-
-                  // Total Revenue Banner Card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF1E293B), Color(0xFF334155)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  Center(
+                    child: Column(
                       children: [
                         Text(
-                          'Total Revenue (May)',
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                        SizedBox(height: 10),
-                        Text(
-                          'LKR 450,000.00',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
+                          gymName,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
+                            fontSize: 24,
                           ),
+                          textAlign: TextAlign.center,
                         ),
-                        SizedBox(height: 15),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.trending_up,
-                              color: Colors.greenAccent,
-                              size: 20,
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).primaryColor.withAlpha((0.1 * 255).toInt()),
+                            borderRadius: BorderRadius.circular(30),
+                            border: Border.all(
+                              color: Theme.of(context).primaryColor.withAlpha((0.2 * 255).toInt()),
                             ),
-                            SizedBox(width: 5),
-                            Text(
-                              '+12.5% from last month',
-                              style: TextStyle(color: Colors.greenAccent),
-                            ),
-                          ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.admin_panel_settings_rounded,
+                                size: 18,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Welcome, ${gymProvider.ownerName ?? 'Owner'}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).primaryColor,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: 15),
+                  Text(
+                    'Gym Management Overview',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Total Revenue Banner Card
+                  StreamBuilder<QuerySnapshot>(
+                    stream: uid != null
+                        ? FirebaseFirestore.instance.collection('gyms').doc(uid).collection('members').snapshots()
+                        : null,
+                    builder: (context, membersSnapshot) {
+                      return StreamBuilder<QuerySnapshot>(
+                        stream: uid != null
+                            ? FirebaseFirestore.instance.collection('gyms').doc(uid).collection('plans').snapshots()
+                            : null,
+                        builder: (context, plansSnapshot) {
+                          double totalRevenue = 0.0;
+                          if (membersSnapshot.hasData && plansSnapshot.hasData) {
+                            Map<String, double> planPrices = {};
+                            for (var planDoc in plansSnapshot.data!.docs) {
+                              final planData = planDoc.data() as Map<String, dynamic>;
+                              planPrices[planData['name'] ?? ''] = (planData['price'] ?? 0.0).toDouble();
+                            }
+                            
+                            for (var memberDoc in membersSnapshot.data!.docs) {
+                              final memberData = memberDoc.data() as Map<String, dynamic>;
+                              final planName = memberData['plan'];
+                              if (planName != null && planPrices.containsKey(planName)) {
+                                totalRevenue += planPrices[planName]!;
+                              }
+                            }
+                          }
+                          
+                          final formattedRevenue = NumberFormat.currency(locale: 'en_LK', symbol: 'LKR ').format(totalRevenue);
+
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF1E293B), Color(0xFF334155)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Estimated Monthly Revenue',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  formattedRevenue,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 15),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.trending_up,
+                                      color: Colors.greenAccent,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      'Based on active plans',
+                                      style: TextStyle(color: Colors.greenAccent[400]),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
                   const SizedBox(height: 30),
 
@@ -82,30 +180,10 @@ class OwnerDashboard extends StatelessWidget {
                     crossAxisSpacing: 15,
                     childAspectRatio: 1.5,
                     children: [
-                      _buildActionCard(
-                        context,
-                        'Total Staff',
-                        '12',
-                        Icons.badge,
-                      ),
-                      _buildActionCard(
-                        context,
-                        'Total Members',
-                        '156',
-                        Icons.people,
-                      ),
-                      _buildActionCard(
-                        context,
-                        'Active Plans',
-                        '8',
-                        Icons.card_membership,
-                      ),
-                      _buildActionCard(
-                        context,
-                        'New Inquiries',
-                        '5',
-                        Icons.question_answer,
-                      ),
+                      _buildDynamicActionCard(context, 'Total Staff', Icons.badge, staffStream),
+                      _buildDynamicActionCard(context, 'Total Members', Icons.people, membersStream),
+                      _buildDynamicActionCard(context, 'Active Plans', Icons.card_membership, plansStream),
+                      _buildDynamicActionCard(context, 'New Inquiries', Icons.question_answer, inquiriesStream),
                     ],
                   ),
                   const SizedBox(height: 30),
@@ -135,13 +213,13 @@ class OwnerDashboard extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildQuickAction(
+                         _buildQuickAction(
                           context,
-                          'Add Member',
-                          Icons.person_add_rounded,
-                          Colors.blue,
+                          'Add Plan',
+                          Icons.add_card_rounded,
+                          Colors.green,
                           () {
-                            _navigateToPlaceholder(context, 'Add New Member');
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => const AddPlanScreen()));
                           },
                         ),
                         _buildQuickAction(
@@ -150,19 +228,16 @@ class OwnerDashboard extends StatelessWidget {
                           Icons.badge_rounded,
                           Colors.orange,
                           () {
-                            _navigateToPlaceholder(context, 'Add New Staff');
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => const AddStaffScreen()));
                           },
                         ),
-                        _buildQuickAction(
+                       _buildQuickAction(
                           context,
-                          'Add Plan',
-                          Icons.add_card_rounded,
-                          Colors.green,
+                          'Add Member',
+                          Icons.person_add_rounded,
+                          Colors.blue,
                           () {
-                            _navigateToPlaceholder(
-                              context,
-                              'Create Membership Plan',
-                            );
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => const AddMemberScreen()));
                           },
                         ),
                         _buildQuickAction(
@@ -171,10 +246,7 @@ class OwnerDashboard extends StatelessWidget {
                           Icons.mark_chat_read_rounded,
                           Colors.purple,
                           () {
-                            _navigateToPlaceholder(
-                              context,
-                              'Resolve Inquiries',
-                            );
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => const InquiriesScreen()));
                           },
                         ),
                       ],
@@ -190,39 +262,81 @@ class OwnerDashboard extends StatelessWidget {
                         'Recent Notices',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      TextButton(
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const PostNoticeScreen(),
+                      Row(
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const PostNoticeScreen(),
+                              ),
+                            ),
+                            child: const Text('Post New'),
                           ),
-                        ),
-                        child: const Text('Post New'),
+                          TextButton(
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const OwnerNoticeListScreen(),
+                              ),
+                            ),
+                            child: const Text('View All'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
-                  _buildNoticeItem(
-                    context,
-                    'Holiday Notice',
-                    'Gym will be closed for Poya day...',
-                    '2h ago',
-                  ),
-                  _buildNoticeItem(
-                    context,
-                    'Maintenance',
-                    'Equipment maintenance on Sunday...',
-                    '1d ago',
-                  ),
+                  if (uid != null)
+                    StreamBuilder<QuerySnapshot>(
+                      stream: DatabaseService().getNotices(uid),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Text('No recent notices.'),
+                          );
+                        }
+                        
+                        final docs = snapshot.data!.docs.take(3).toList();
+                        return Column(
+                          children: docs.map((doc) {
+                            final data = doc.data() as Map<String, dynamic>;
+                            final title = data['title'] ?? 'No Title';
+                            final content = data['content'] ?? 'No Content';
+                            final timestamp = data['timestamp'] as Timestamp?;
+                            
+                            String timeString = 'Just now';
+                            if (timestamp != null) {
+                              final date = timestamp.toDate();
+                              final now = DateTime.now();
+                              final difference = now.difference(date);
+                              
+                              if (difference.inHours < 24) {
+                                if (difference.inHours > 0) {
+                                  timeString = '${difference.inHours}h ago';
+                                } else if (difference.inMinutes > 0) {
+                                  timeString = '${difference.inMinutes}m ago';
+                                }
+                              } else {
+                                timeString = '${difference.inDays}d ago';
+                              }
+                            }
+                            
+                            return _buildNoticeItem(context, title, content, timeString);
+                          }).toList(),
+                        );
+                      },
+                    ),
                 ],
               ),
             ),
 
             // Separation spacing baseline buffer matching design guidelines
             const SizedBox(height: 40),
-
-            // --- THE GLOBAL COMPONENT FOOTER BAR ---
-            const AppFooter(),
           ],
         ),
       ),
@@ -309,6 +423,28 @@ class OwnerDashboard extends StatelessWidget {
           Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
       ),
+    );
+  }
+
+  Widget _buildDynamicActionCard(
+    BuildContext context,
+    String label,
+    IconData icon,
+    Stream<QuerySnapshot>? stream,
+  ) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: stream,
+      builder: (context, snapshot) {
+        String value = '...';
+        if (snapshot.hasError) {
+          value = 'Err';
+        } else if (snapshot.hasData) {
+          value = snapshot.data!.docs.length.toString();
+        } else if (snapshot.connectionState == ConnectionState.done && !snapshot.hasData) {
+          value = '0';
+        }
+        return _buildActionCard(context, label, value, icon);
+      },
     );
   }
 

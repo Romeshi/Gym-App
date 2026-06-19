@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:fithub_gym/features/dashboard/screens/app_footer.dart';
 
 class MemberDashboard extends StatelessWidget {
   const MemberDashboard({super.key});
@@ -93,9 +92,6 @@ class MemberDashboard extends StatelessWidget {
 
             // Separation Space
             const SizedBox(height: 40),
-
-            // --- THE COMPONENT FOOTER BAR ---
-            const AppFooter(),
           ],
         ),
       ),

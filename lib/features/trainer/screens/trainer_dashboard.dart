@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:fithub_gym/features/dashboard/screens/app_footer.dart';
+import 'package:provider/provider.dart';
+import '../../../core/providers/gym_provider.dart';
 
 class TrainerDashboard extends StatelessWidget {
   const TrainerDashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final gymProvider = Provider.of<GymProvider>(context);
+    final staffName = gymProvider.ownerName ?? 'Staff';
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
@@ -18,7 +22,7 @@ class TrainerDashboard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Welcome, Coach Alex!',
+                    'Welcome, $staffName!',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const Text('You have 4 sessions today.'),
@@ -85,9 +89,6 @@ class TrainerDashboard extends StatelessWidget {
 
             // Separation Space
             const SizedBox(height: 40),
-
-            // --- THE COMPONENT FOOTER BAR ---
-            const AppFooter(),
           ],
         ),
       ),

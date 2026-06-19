@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fithub_gym/core/providers/navigation_provider.dart';
 
 class GymProvider extends ChangeNotifier {
   // Firebase Instances
@@ -14,14 +15,34 @@ class GymProvider extends ChangeNotifier {
   String? _currentLocation;
   String? _ownerName;
   String? _ownerEmail;
+  String? _phoneNumber;
   String? _verificationId;
+  UserRole? _role;
+
+  // Auto-initialize on app start
+  GymProvider() {
+    _init();
+  }
+
+  Future<void> _init() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      debugPrint("GymProvider Init: Found user ${user.uid}");
+      await _loadGymData(user.uid);
+    } else {
+      debugPrint("GymProvider Init: No user logged in.");
+    }
+  }
 
   // Getters
   String? get currentGymId => _currentGymId;
   String? get currentGymName => _currentGymName;
   String? get currentLocation => _currentLocation;
   String? get ownerName => _ownerName;
+  String? get ownerEmail => _ownerEmail;
+  String? get phoneNumber => _phoneNumber;
   String? get verificationId => _verificationId;
+  UserRole? get role => _role;
 
   // --- 1. REGISTRATION LOGIC WITH EMAIL VERIFICATION ---
   Future<bool> registerNewGym({
@@ -97,16 +118,16 @@ class GymProvider extends ChangeNotifier {
         await user.reload();
         user = _auth.currentUser;
 
-        if (!user!.emailVerified) {
-          return "EMAIL_NOT_VERIFIED";
-        }
-
         DocumentSnapshot doc = await _firestore
             .collection('gyms')
-            .doc(user.uid)
+            .doc(user!.uid)
             .get();
 
         if (doc.exists) {
+          if (!user.emailVerified) {
+            return "EMAIL_NOT_VERIFIED";
+          }
+
           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
           if (data['phoneNumber'] != null) {
@@ -172,9 +193,19 @@ class GymProvider extends ChangeNotifier {
         smsCode: smsCode,
       );
 
-      await _auth.signInWithCredential(credential);
+      // Use linkWithCredential to maintain the original Email UID session
+      await _auth.currentUser!.linkWithCredential(credential);
       await _loadGymData(_auth.currentUser!.uid);
       return true;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'credential-already-in-use' || e.code == 'provider-already-linked') {
+        // OTP was correct, but phone is already linked. This is a successful verification!
+        debugPrint("OTP correct, phone already linked.");
+        await _loadGymData(_auth.currentUser!.uid);
+        return true;
+      }
+      debugPrint("OTP Verification Failed: ${e.message}");
+      return false;
     } catch (e) {
       debugPrint("OTP Verification Failed: $e");
       return false;
@@ -195,15 +226,57 @@ class GymProvider extends ChangeNotifier {
   // --- 7. HELPERS ---
   Future<void> _loadGymData(String uid) async {
     try {
+      debugPrint("Fetching gym data for UID: $uid");
       DocumentSnapshot doc = await _firestore.collection('gyms').doc(uid).get();
       if (doc.exists) {
+        debugPrint("Gym document FOUND!");
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        _role = UserRole.owner;
         _currentGymId = data['gymId'];
         _currentGymName = data['gymName'];
         _currentLocation = data['location'];
         _ownerName = data['ownerName'];
         _ownerEmail = data['email'];
+        _phoneNumber = data['phoneNumber'];
         notifyListeners();
+      } else {
+        debugPrint("Gym document NOT FOUND in 'gyms', checking 'users' collection for UID: $uid");
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(uid).get();
+        
+        if (userDoc.exists) {
+          debugPrint("User document FOUND!");
+          Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+          String? userGymId = userData['gymId'];
+          
+          if (userGymId != null) {
+            QuerySnapshot gymQuery = await _firestore.collection('gyms').where('gymId', isEqualTo: userGymId).limit(1).get();
+            
+            if (gymQuery.docs.isNotEmpty) {
+              Map<String, dynamic> gymData = gymQuery.docs.first.data() as Map<String, dynamic>;
+              _currentGymId = gymData['gymId'];
+              _currentGymName = gymData['gymName'];
+              _currentLocation = gymData['location'];
+            }
+          }
+          
+          // Populate personal info from user doc
+          _ownerName = userData['name'];
+          _ownerEmail = userData['email'];
+          _phoneNumber = userData['phone'];
+          
+          String roleStr = userData['role'] ?? 'member';
+          if (roleStr == 'owner') {
+            _role = UserRole.owner;
+          } else if (roleStr == 'trainer' || roleStr == 'staff') {
+            _role = UserRole.trainer;
+          } else {
+            _role = UserRole.member;
+          }
+          
+          notifyListeners();
+        } else {
+          debugPrint("CRITICAL: User document NOT FOUND in both 'gyms' and 'users' collections for UID: $uid");
+        }
       }
     } catch (e) {
       debugPrint("Error loading gym data: $e");
@@ -217,7 +290,9 @@ class GymProvider extends ChangeNotifier {
     _currentLocation = null;
     _ownerName = null;
     _ownerEmail = null;
+    _phoneNumber = null;
     _verificationId = null;
+    _role = null;
     notifyListeners();
   }
 }

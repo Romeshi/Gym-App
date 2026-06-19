@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fithub_gym/core/providers/navigation_provider.dart';
+import 'package:fithub_gym/core/providers/gym_provider.dart';
 import 'package:fithub_gym/features/member/screens/member_dashboard.dart';
 import 'package:fithub_gym/features/trainer/screens/trainer_dashboard.dart';
 import 'package:fithub_gym/features/owner/screens/owner_dashboard.dart';
@@ -13,7 +14,18 @@ import 'package:fithub_gym/features/member/screens/diet_screen.dart';
 import 'package:fithub_gym/features/member/screens/growth_history_screen.dart';
 import 'package:fithub_gym/features/member/screens/notice_list_screen.dart';
 import 'package:fithub_gym/features/owner/screens/member_management_screen.dart';
+import 'package:fithub_gym/features/owner/screens/staff_management_screen.dart';
+import 'package:fithub_gym/features/owner/screens/plan_management_screen.dart';
+import 'package:fithub_gym/features/owner/screens/post_notice_screen.dart';
+import 'package:fithub_gym/features/owner/screens/owner_notice_list_screen.dart';
 import 'package:fithub_gym/features/dashboard/screens/info_detail_screen.dart';
+import 'package:fithub_gym/features/dashboard/screens/about_screen.dart';
+import 'package:fithub_gym/features/dashboard/screens/contact_screen.dart';
+import 'package:fithub_gym/features/dashboard/screens/privacy_policy_screen.dart';
+import 'package:fithub_gym/features/dashboard/screens/terms_and_conditions_screen.dart';
+import 'package:fithub_gym/features/dashboard/screens/profile_screen.dart';
+import 'package:fithub_gym/features/owner/screens/revenue_screen.dart';
+import 'package:fithub_gym/features/trainer/screens/trainer_client_list_screen.dart';
 
 class PlaceholderScreen extends StatelessWidget {
   final String title;
@@ -50,10 +62,29 @@ class RootShell extends StatelessWidget {
         ),
         title: Text(navItems[navProvider.selectedIndex].label ?? ''),
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              if (value == 'logout') {
+
+          IconButton(
+            icon: const Icon(Icons.campaign_rounded),
+            onPressed: () {
+              if (role == UserRole.owner) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const OwnerNoticeListScreen()),
+                );
+              } else if (role == UserRole.member) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MemberNoticeScreen()),
+                );
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout_rounded),
+            tooltip: 'Logout',
+            onPressed: () async {
+              await Provider.of<GymProvider>(context, listen: false).signOut();
+              if (context.mounted) {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(
@@ -61,44 +92,8 @@ class RootShell extends StatelessWidget {
                   ),
                   (route) => false,
                 );
-              } else if (value == 'register' && role == UserRole.owner) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const RegisterGymScreen(),
-                  ),
-                );
               }
             },
-            itemBuilder: (context) => [
-              if (role == UserRole.owner)
-                const PopupMenuItem(
-                  value: 'register',
-                  child: Text('Register Gym'),
-                ),
-              const PopupMenuItem(value: 'logout', child: Text('Logout')),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                enabled: false,
-                child: Text('Switch View (Dev)'),
-              ),
-              PopupMenuItem(
-                onTap: () => navProvider.setRole(UserRole.member),
-                child: const Text('  • Member View'),
-              ),
-              PopupMenuItem(
-                onTap: () => navProvider.setRole(UserRole.trainer),
-                child: const Text('  • Trainer View'),
-              ),
-              PopupMenuItem(
-                onTap: () => navProvider.setRole(UserRole.owner),
-                child: const Text('  • Owner View'),
-              ),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () {},
           ),
         ],
       ),
@@ -112,32 +107,65 @@ class RootShell extends StatelessWidget {
             children: [
               DrawerHeader(
                 decoration: const BoxDecoration(color: Color(0xFF1A237E)),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Stack(
                   children: [
-                    const Text(
-                      'FH',
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        fontFamily: 'Serif',
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: () => Navigator.pop(context),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'FITHUB GYM PRO',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade300,
-                        letterSpacing: 2,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withAlpha((0.15 * 255).toInt()),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.fitness_center_rounded,
+                                size: 28,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 15),
+                            const Text(
+                              'FitHub',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Gym Management App',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade300,
+                            letterSpacing: 2.4,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
+
+              const SizedBox(height: 30),
+
               Expanded(
                 child: ListView(
                   padding: EdgeInsets.zero,
@@ -150,67 +178,33 @@ class RootShell extends StatelessWidget {
                       ); // Snap index back to home dashboard view
                     }),
 
+                    const SizedBox(height: 10),
+
                     // About FitHub Section Link
-                    _buildDrawerItem(Icons.info_outline, 'About FitHub', () {
+                    _buildDrawerItem(Icons.info_outline, 'About Us', () {
                       Navigator.pop(context);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const InfoDetailScreen(
-                            title: 'About FitHub',
-                            sections: [
-                              InfoSection(
-                                icon: Icons.fitness_center,
-                                heading: 'Our Vision',
-                                body:
-                                    'FitHub Gym Pro is engineered to bridge the operational gap between gym administrations, fitness personal trainers, and active gym members, providing a cohesive ecosystem for biometric tracking and workflow automations.',
-                              ),
-                              InfoSection(
-                                icon: Icons.analytics_outlined,
-                                heading: 'Key Modules',
-                                body:
-                                    'The architecture targets distinct user experiences, supporting precise business accounting reporting models for Owners, streamlined scheduling configurations for Trainers, and workout telemetry tools for Members.',
-                              ),
-                              InfoSection(
-                                icon: Icons.security,
-                                heading: 'Platform Integrity',
-                                body:
-                                    'Leveraging secure distributed database logic, the platform ensures highly safe transaction processing, persistent identity parsing, and continuous availability across all systems nodes.',
-                              ),
-                            ],
-                          ),
+                          builder: (context) => const AboutScreen(),
                         ),
                       );
                     }),
+
+                    const SizedBox(height: 10),
 
                     // Contact Support Section Link
-                    _buildDrawerItem(Icons.phone_outlined, 'Contact Support', () {
+                    _buildDrawerItem(Icons.phone_outlined, 'Contact Us', () {
                       Navigator.pop(context);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const InfoDetailScreen(
-                            title: 'Contact Support',
-                            sections: [
-                              InfoSection(
-                                icon: Icons.email_outlined,
-                                heading: 'FitHub Help Desk',
-                                body:
-                                    'Need help? You can reach the FitHub development support network via email at support@fithubgym.com or speak to system administrators for institution access.',
-                              ),
-                              InfoSection(
-                                icon: Icons.admin_panel_settings_outlined,
-                                heading: 'System Administrator Access',
-                                body:
-                                    'For institutional permissions requests or database profile verification tracking updates, please contact your university system coordinator directly.',
-                              ),
-                            ],
-                          ),
+                          builder: (context) => const ContactScreen(),
                         ),
                       );
                     }),
 
-                    const Divider(color: Colors.white10, height: 20),
+                    const Divider(color: Colors.white10, height: 40),
 
                     // Privacy Policy Section Link
                     _buildDrawerItem(Icons.shield_outlined, 'Privacy Policy', () {
@@ -218,26 +212,12 @@ class RootShell extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const InfoDetailScreen(
-                            title: 'Privacy Policy',
-                            sections: [
-                              InfoSection(
-                                icon: Icons.lock_outline,
-                                heading: 'Data Collection & Encryption',
-                                body:
-                                    'FitHub Gym Pro strictly protects user credentials, transactional metrics profiles, and health records telemetry. All data vectors undergo strict encryption layers before database parsing executions.',
-                              ),
-                              InfoSection(
-                                icon: Icons.gavel,
-                                heading: 'Regulatory Security Rules',
-                                body:
-                                    'The database system adheres to zero-trust structural architecture. Fine-grained security permission vectors ensure data documents remain completely isolated, blockading external unauthorized entry vectors.',
-                              ),
-                            ],
-                          ),
+                          builder: (context) => const PrivacyPolicyScreen(),
                         ),
                       );
                     }),
+
+                    const SizedBox(height: 10),
 
                     // Terms & Conditions Section Link
                     _buildDrawerItem(
@@ -248,28 +228,13 @@ class RootShell extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const InfoDetailScreen(
-                              title: 'Terms & Conditions',
-                              sections: [
-                                InfoSection(
-                                  icon: Icons.assignment_turned_in_outlined,
-                                  heading: 'Acceptable Platform Utilization',
-                                  body:
-                                      'By creating an authorized account, platform users agree to interact with gym operations tools purely for legitimate scheduling, management tracking, and physical biometric input tasks.',
-                                ),
-                                InfoSection(
-                                  icon: Icons.report_gmailerrorred_outlined,
-                                  heading:
-                                      'System Security Integrity Obligations',
-                                  body:
-                                      'Executing malicious runtime requests, tampering with authorization headers, or testing platform limitations with invalid credential injection parameters will result in sudden administrative profile terminations.',
-                                ),
-                              ],
-                            ),
+                            builder: (context) => const TermsAndConditionsScreen(),
                           ),
                         );
                       },
                     ),
+
+                    const SizedBox(height: 10),
 
                     // FAQ Section Link
                     _buildDrawerItem(Icons.help_outline_rounded, 'FAQ', () {
@@ -305,6 +270,40 @@ class RootShell extends StatelessWidget {
                           ),
                         ),
                       );
+                    }),
+
+                    const Divider(color: Colors.white10, height: 40),
+
+                    // Profile Section Link
+                    _buildDrawerItem(Icons.person_outline, 'My Account', () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileScreen(),
+                        ),
+                      );
+                    }),
+
+                    const SizedBox(height: 10),
+
+                    // Logout Section Link
+                    _buildDrawerItem(Icons.logout_rounded, 'Logout', () async {
+                      Navigator.pop(context); // Close drawer
+                      
+                      // Perform logout logic through GymProvider
+                      await Provider.of<GymProvider>(context, listen: false).signOut();
+                      
+                      // Navigate back to the Welcome Screen, clearing the route stack
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const WelcomeScreen(),
+                          ),
+                          (route) => false,
+                        );
+                      }
                     }),
                   ],
                 ),
@@ -361,7 +360,7 @@ class RootShell extends StatelessWidget {
       case UserRole.trainer:
         return [
           const TrainerDashboard(),
-          const PlaceholderScreen('My Clients'),
+          const TrainerClientListScreen(),
           const AssignmentListScreen(),
           const PlaceholderScreen('Schedules'),
         ];
@@ -369,9 +368,9 @@ class RootShell extends StatelessWidget {
         return [
           const OwnerDashboard(),
           const MemberManagementScreen(),
-          const PlaceholderScreen('Staff Management'),
-          const PlaceholderScreen('Gym Revenue'),
-          const PlaceholderScreen('Notices'),
+          const StaffManagementScreen(),
+          const RevenueScreen(),
+          const PlanManagementScreen(),
         ];
     }
   }
@@ -439,8 +438,8 @@ class RootShell extends StatelessWidget {
             label: 'Revenue',
           ),
           const BottomNavigationBarItem(
-            icon: Icon(Icons.campaign_rounded),
-            label: 'Notices',
+            icon: Icon(Icons.card_membership_rounded),
+            label: 'Plans',
           ),
         ];
     }

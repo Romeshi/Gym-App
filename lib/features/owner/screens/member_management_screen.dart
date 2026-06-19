@@ -1,13 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import 'package:provider/provider.dart';
+import '../../../core/providers/gym_provider.dart';
+import 'add_member_screen.dart';
+import 'member_details_screen.dart';
 
 class Member {
-  final String id;
+  final String uid; // Real Firestore document ID
+  final String id; // Short Display ID
   final String name;
   final String phone;
   final String planEndDate;
 
-  Member({required this.id, required this.name, required this.phone, required this.planEndDate});
+  Member({
+    required this.uid,
+    required this.id,
+    required this.name,
+    required this.phone,
+    required this.planEndDate,
+  });
 }
 
 class MemberManagementScreen extends StatefulWidget {
@@ -18,39 +32,23 @@ class MemberManagementScreen extends StatefulWidget {
 }
 
 class _MemberManagementScreenState extends State<MemberManagementScreen> {
-  final List<Member> _allMembers = [
-    Member(id: 'M001', name: 'Kasun Perera', phone: '0771234567', planEndDate: '2026-06-15'),
-    Member(id: 'M002', name: 'Nimal Silva', phone: '0719876543', planEndDate: '2026-05-20'),
-    Member(id: 'M003', name: 'Amara Wickrama', phone: '0755556666', planEndDate: '2026-12-01'),
-    Member(id: 'M004', name: 'Dilshan Madushanka', phone: '0701112222', planEndDate: '2026-04-10'),
-    Member(id: 'M005', name: 'Samantha Rathnayake', phone: '0783334444', planEndDate: '2026-08-30'),
-  ];
-
-  List<Member> _filteredMembers = [];
+  String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _filteredMembers = _allMembers;
-    _searchController.addListener(_onSearchChanged);
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.toLowerCase();
+      });
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      _filteredMembers = _allMembers.where((m) => 
-        m.name.toLowerCase().contains(query) || 
-        m.phone.contains(query) || 
-        m.id.toLowerCase().contains(query)
-      ).toList();
-    });
   }
 
   Future<void> _makePhoneCall(String phone) async {
@@ -94,13 +92,16 @@ class _MemberManagementScreenState extends State<MemberManagementScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           TextButton(
-            onPressed: () {
-              setState(() {
-                _allMembers.removeWhere((m) => m.id == member.id);
-                _onSearchChanged();
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Member deleted')));
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              final ownerUid = FirebaseAuth.instance.currentUser?.uid;
+              if (ownerUid != null) {
+                // Remove from global users collection
+                await FirebaseFirestore.instance.collection('users').doc(member.uid).delete();
+                // Remove from local gym members subcollection
+                await FirebaseFirestore.instance.collection('gyms').doc(ownerUid).collection('members').doc(member.uid).delete();
+              }
+              if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Member deleted')));
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -111,6 +112,9 @@ class _MemberManagementScreenState extends State<MemberManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final gymProvider = Provider.of<GymProvider>(context);
+    final String? gymId = gymProvider.currentGymId; // GYM-1234
+
     return Scaffold(
       body: Column(
         children: [
@@ -129,16 +133,90 @@ class _MemberManagementScreenState extends State<MemberManagementScreen> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: _filteredMembers.length,
-              itemBuilder: (context, index) {
-                final member = _filteredMembers[index];
-                return _buildMemberCard(member);
-              },
-            ),
+            child: gymId == null
+                ? const Center(child: Text('Please log in again.'))
+                : StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('users')
+                        .where('gymId', isEqualTo: gymId)
+                        .where('role', isEqualTo: 'member')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      List<Member> memberList = [];
+
+                      if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                        memberList = snapshot.data!.docs.map((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final uid = data['uid'] ?? doc.id;
+                          
+                          // Estimate plan end date (assuming 1 year for now if startDate is present)
+                          String planEndDateStr = 'Unknown';
+                          if (data['startDate'] != null) {
+                            try {
+                              DateTime startDate = (data['startDate'] as Timestamp).toDate();
+                              // Adding a year arbitrarily for UI purposes
+                              planEndDateStr = "${startDate.year + 1}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}";
+                            } catch (e) {
+                              planEndDateStr = 'Invalid Date';
+                            }
+                          }
+
+                          return Member(
+                            uid: uid,
+                            id: uid.toString().length >= 8 ? uid.toString().substring(0, 8).toUpperCase() : uid.toString().toUpperCase(),
+                            name: data['name'] ?? 'Unknown User',
+                            phone: data['phone'] ?? 'N/A',
+                            planEndDate: planEndDateStr,
+                          );
+                        }).toList();
+                      }
+
+                      // Filter locally by search query
+                      if (_searchQuery.isNotEmpty) {
+                        memberList = memberList.where((m) {
+                          final name = m.name.toLowerCase();
+                          final phone = m.phone.toLowerCase();
+                          final id = m.id.toLowerCase();
+                          return name.contains(_searchQuery) || phone.contains(_searchQuery) || id.contains(_searchQuery);
+                        }).toList();
+                      }
+
+                      if (memberList.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'No members found.\nClick the + button to add one.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey, fontSize: 16),
+                          ),
+                        );
+                      }
+
+                      return ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: memberList.length,
+                        itemBuilder: (context, index) {
+                          return _buildMemberCard(memberList[index]);
+                        },
+                      );
+                    },
+                  ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        heroTag: null,
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddMemberScreen()),
+          );
+        },
+        backgroundColor: const Color(0xFF2962FF),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
@@ -166,7 +244,7 @@ class _MemberManagementScreenState extends State<MemberManagementScreen> {
             children: [
               CircleAvatar(
                 backgroundColor: Theme.of(context).primaryColor.withAlpha((0.1 * 255).toInt()),
-                child: Text(member.name[0], style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold)),
+                child: Text(member.name.isNotEmpty ? member.name.substring(0, 1) : '?', style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(width: 15),
               Expanded(
@@ -180,7 +258,7 @@ class _MemberManagementScreenState extends State<MemberManagementScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => MemberDetailsScreen(member: member))),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => MemberDetailsScreen(uid: member.uid, shortId: member.id))),
               ),
             ],
           ),
@@ -246,6 +324,7 @@ class _MemberManagementScreenState extends State<MemberManagementScreen> {
   }
 
   bool _isPlanExpiring(String dateStr) {
+    if (dateStr == 'Unknown' || dateStr == 'Invalid Date') return false;
     try {
       final date = DateTime.parse(dateStr);
       final now = DateTime.now();
@@ -256,31 +335,3 @@ class _MemberManagementScreenState extends State<MemberManagementScreen> {
   }
 }
 
-class MemberDetailsScreen extends StatelessWidget {
-  final Member member;
-  const MemberDetailsScreen({super.key, required this.member});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Member Details')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircleAvatar(
-              radius: 50,
-              backgroundColor: Theme.of(context).primaryColor.withAlpha((0.1 * 255).toInt()),
-              child: Text(member.name[0], style: TextStyle(fontSize: 40, color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold)),
-            ),
-            const SizedBox(height: 20),
-            Text(member.name, style: Theme.of(context).textTheme.headlineMedium),
-            Text('ID: ${member.id}', style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 40),
-            const Text('Detailed member information, history, and analytics will be displayed here.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
-          ],
-        ),
-      ),
-    );
-  }
-}

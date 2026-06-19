@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fithub_gym/core/providers/navigation_provider.dart';
@@ -6,6 +7,7 @@ import 'package:fithub_gym/core/providers/gym_provider.dart';
 import 'package:fithub_gym/features/dashboard/screens/root_shell.dart';
 import 'package:fithub_gym/features/owner/screens/register_gym_screen.dart';
 import 'package:fithub_gym/features/owner/screens/OTPVerificationScreen.dart';
+import 'package:fithub_gym/features/dashboard/screens/terms_and_conditions_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final UserRole role;
@@ -168,6 +170,12 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } else {
         // Access Granted
+        final actualRole = context.read<GymProvider>().role;
+        if (actualRole != null && actualRole != widget.role) {
+           // Role mismatch! Automatically set correct role for the logged-in user.
+           context.read<NavigationProvider>().setRole(actualRole);
+        }
+
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const RootShell()),
@@ -254,7 +262,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     prefixIcon: Icon(Icons.email_outlined),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 30),
 
                 // Password Input
                 TextField(
@@ -335,6 +343,36 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
+                
+                const SizedBox(height: 30),
+                RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    children: [
+                      const TextSpan(text: 'By continuing, you agree to our '),
+                      TextSpan(
+                        text: 'Terms & Conditions',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                          decorationColor: Colors.grey,
+                        ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const TermsAndConditionsScreen(),
+                              ),
+                            );
+                          },
+                      ),
+                      const TextSpan(text: '.'),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

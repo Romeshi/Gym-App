@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:fithub_gym/core/providers/gym_provider.dart';
-import 'package:fithub_gym/features/dashboard/screens/root_shell.dart';
+import '../../../core/providers/gym_provider.dart';
+import '../../../core/providers/navigation_provider.dart';
+import '../../dashboard/screens/root_shell.dart';
 
 class OTPVerificationScreen extends StatefulWidget {
   final String verificationId;
@@ -26,6 +27,11 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     );
 
     if (success && mounted) {
+      final actualRole = context.read<GymProvider>().role;
+      if (actualRole != null) {
+        context.read<NavigationProvider>().setRole(actualRole);
+      }
+      
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const RootShell()),
