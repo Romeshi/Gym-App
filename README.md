@@ -45,7 +45,7 @@ The application employs a reactive business logic layer that separates UI state 
 
 ## 📜 Documentation
 
-For a detailed breakdown of the system architecture, database design, and interface specifications, please refer to the [Final Report PDF](https://www.google.com/search?q=link-to-your-pdf-here).
+For a detailed breakdown of the system architecture, database design, and interface specifications, please refer to the [Final Report PDF](docs/Group_5_Final_Report.pdf).
 
 ## 📝 License
 
