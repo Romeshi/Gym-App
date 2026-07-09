@@ -1,17 +1,55 @@
-# fithub_gym
 
-A new Flutter project.
+# FitHub: Gym Management Mobile App
 
-## Getting Started
+FitHub is an advanced distributed application ecosystem designed to optimize the operations of modern fitness centers. Developed as a final-year capstone project, FitHub serves gym owners, personal trainers, and members through an integrated, secure, and reactive platform.
 
-This project is a starting point for a Flutter application.
+## 🚀 Key Features
 
-A few resources to get you started if this is your first Flutter project:
+* **Multi-Role Access**: Secure, zero-trust authentication framework designed for Owners, Trainers, and Members.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+* **AI-Driven Planning**: Automated exercise and dietary plan generation tailored to individual user goals.
+
+
+* **Real-Time Computer Vision**: Edge-based skeletal tracking for live form correction during workouts.
+
+
+* **Cloud Synchronization**: Reactive database architecture powered by Firebase, ensuring consistent data access across all devices.
+
+
+
+## 🛠 Tech Stack
+
+* **Frontend**: [Flutter SDK / Dart](https://flutter.dev)
+
+* **Backend**: [Google Firebase (Cloud Firestore & Authentication)](https://firebase.google.com)
+
+* **Visualization**: [FL Chart Core Engine](https://pub.dev/packages/fl_chart)
+
+* **Version Control**: Git / GitHub
+
+
+
+## 🏗 System Architecture
+
+The application employs a reactive business logic layer that separates UI state from data processing, ensuring stability and low latency in distributed gym environments.
+
+## 👥 Project Team
+
+* **N.W.P.P.P. Nanayakkara** 
+* **W.I.J.M.R.K. Warnasuriya** 
+
+*Degree Programme: BSc (Hons) in Computer Systems Engineering, NSBM Green University Town*
+
+---
+
+## 📜 Documentation
+
+For a detailed breakdown of the system architecture, database design, and interface specifications, please refer to the [Final Report PDF](https://www.google.com/search?q=link-to-your-pdf-here).
+
+## 📝 License
+
+This project is maintained for educational purposes as part of the CS405.3 curriculum at NSBM Green University.
+
+
+
